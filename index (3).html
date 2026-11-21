@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Rekod Kesihatan Staf KK Kupang</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --border: #cbd5e1;
+      --teal-dark: #134e4a;
+      --teal: #0f766e;
+      --teal-light: #ccfbf1;
+      --blue: #0284c7;
+      --emerald: #059669;
+      --amber: #d97706;
+      --rose: #e11d48;
+      --purple: #7c3aed;
+      --shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.45;
+    }
+    /* Header */
+    .topbar {
+      background: linear-gradient(135deg, var(--teal-dark), var(--teal));
+      color: #fff;
+      padding: 16px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: var(--shadow);
+    }
+    .topbar-title h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .topbar-title p {
+      font-size: 0.85rem;
+      color: var(--teal-light);
+      margin-top: 2px;
+    }
+    .owner-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .role-badge {
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+    .role-badge.owner {
+      background: #fef08a;
+      color: #854d0e;
+      border-color: #fde047;
+    }
+    button {
+      font-family: inherit;
+      font-size: 0.84rem;
+      font-weight: 600;
+      padding: 7px 13px;
+      border-radius: 7px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .btn-light {
+      background: #ffffff;
+      color: var(--teal-dark);
+    }
+    .btn-light:hover:not(:disabled) { background: #e2e8f0; }
+    .btn-teal {
+      background: var(--teal);
+      color: #ffffff;
+    }
+    .btn-teal:hover:not(:disabled) { background: var(--teal-dark); }
+    .btn-amber {
+      background: #f59e0b;
+      color: #ffffff;
+    }
+    .btn-amber:hover:not(:disabled) { background: #d97706; }
+    .btn-outline {
+      background: #ffffff;
+      color: var(--ink);
+      border-color: var(--border);
+    }
+    .btn-outline:hover:not(:disabled) { background: #f8fafc; }
+    .btn-danger {
+      background: #fee2e2;
+      color: #991b1b;
+      border-color: #fecaca;
+    }
+    .btn-danger:hover:not(:disabled) { background: #fecaca; }
+    .btn-sm { padding: 4px 9px; font-size: 0.78rem; }
+
+    /* Nav Tabs */
+    .nav-tabs {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      background: transparent;
+      color: var(--muted);
+      border: none;
+      border-bottom: 3px solid transparent;
+      border-radius: 0;
+      padding: 12px 16px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: var(--teal-dark); }
+    .tab-btn.active {
+      color: var(--teal-dark);
+      border-bottom-color: var(--teal);
+    }
+
+    /* Container */
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px 24px 48px;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .kpi-card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+      border-left: 5px solid var(--teal);
+    }
+    .kpi-card .label { font-size: 0.76rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+    .kpi-card .value { font-size: 1.65rem; font-weight: 800; color: var(--ink); margin: 4px 0 2px; }
+    .kpi-card .sub { font-size: 0.8rem; color: var(--muted); }
+
+    /* Summary Grid */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+    }
+    .card-header {
+      background: var(--teal);
+      color: #ffffff;
+      padding: 9px 14px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-header.dark { background: var(--teal-dark); }
+    .card-header.blue { background: #0369a1; }
+    .card-header.indigo { background: #3730a3; }
+    .card-header.rose { background: #9f1239; }
+
+    table.mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+    }
+    table.mini-table th {
+      background: #e2e8f0;
+      color: var(--ink);
+      font-weight: 700;
+      padding: 7px 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    table.mini-table th.num, table.mini-table td.num { text-align: center; }
+    table.mini-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    table.mini-table tr:nth-child(even) td { background: #f8fafc; }
+    table.mini-table tr.total-row td {
+      background: #e2e8f0;
+      font-weight: 700;
+      border-top: 1px solid var(--teal-dark);
+      border-bottom: 2px double var(--teal-dark);
+    }
+
+    /* Charts Grid */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .chart-box {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      border: 1px solid #e2e8f0;
+    }
+    .chart-box h3 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--teal-dark);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .b-green { background: #dcfce7; color: #166534; }
+    .b-yellow { background: #fef9c3; color: #854d0e; }
+    .b-red { background: #fee2e2; color: #991b1b; }
+    .b-gray { background: #e2e8f0; color: #334155; }
+
+    /* Toolbar & Data Table */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      background: var(--card);
+      padding: 12px 14px;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+    }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    input[type="text"], input[type="number"], input[type="date"], input[type="password"], select {
+      font-family: inherit;
+      font-size: 0.84rem;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+    }
+    .table-wrap {
+      background: var(--card);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+      border: 1px solid #e2e8f0;
+    }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    table.data-table th {
+      background: var(--teal-dark);
+      color: #fff;
+      padding: 9px 10px;
+      text-align: left;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+    }
+    table.data-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      white-space: nowrap;
+    }
+    table.data-table tr:hover td { background: #f0fdfa; }
+
+    /* Modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: #ffffff;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 780px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+    }
+    .modal.small { max-width: 420px; }
+    .modal-header {
+      background: var(--teal-dark);
+      color: #fff;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+    }
+    .modal-body { padding: 18px; }
+    .modal-footer {
+      padding: 12px 18px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label { font-size: 0.78rem; font-weight: 700; color: var(--muted); }
+    .section-divider {
+      grid-column: 1 / -1;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--teal-dark);
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 4px;
+      margin-top: 6px;
+    }
+    .notice-banner {
+      background: #ecfeff;
+      border: 1px solid #a5f3fc;
+      color: #155e75;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.83rem;
+      margin-bottom: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP HEADER -->
+  <header class="topbar">
+    <div class="topbar-title">
+      <h1>DASHBOARD REKOD KESIHATAN STAF KK KUPANG</h1>
+      <p>Pemantauan Saringan Tibi, Mantoux, Influenza, Hep B, Antropometri, Makmal &amp; DASS-21</p>
+    </div>
+    <div class="owner-bar">
+      <span id="roleBadge" class="role-badge">Mod Staf (Edit Data Sahaja)</span>
+      <button id="btnOwnerToggle" class="btn-amber" onclick="openOwnerModal()">Login Owner</button>
+      <button id="btnDownloadCsv" class="btn-light" onclick="exportOwnerCsv()" disabled title="Hanya Owner boleh muat turun laporan">Muat Turun Laporan (CSV)</button>
+      <button id="btnDownloadJson" class="btn-light" onclick="exportOwnerJson()" disabled title="Hanya Owner boleh muat turun laporan">Backup JSON (Owner)</button>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('dashboard', this)">Dashboard &amp; Ringkasan</button>
+    <button class="tab-btn" onclick="switchTab('rekod', this)">Rekod Staf (Edit Data)</button>
+    <button class="tab-btn" onclick="switchTab('wajib40', this)">Senarai Wajib &ge; 40 Tahun</button>
+  </nav>
+
+  <main class="container">
+    <!-- ==================== TAB 1: DASHBOARD ==================== -->
+    <section id="tab-dashboard" class="tab-panel active">
+      <div class="notice-banner">
+        <strong>Akses Terkawal:</strong> Semua staf boleh menambah atau mengedit rekod kesihatan sendiri di tab <strong>Rekod Staf (Edit Data)</strong> (BMI &amp; Kategori BMI dikira automatik). Fungsi <strong>Muat Turun Laporan</strong> dikunci dan hanya boleh diakses oleh <strong>Owner</strong>.
+      </div>
+
+      <!-- KPI ROW 1 -->
+      <div class="kpi-grid" id="kpiRow1"></div>
+      <!-- KPI ROW 2 -->
+      <div class="kpi-grid" id="kpiRow2"></div>
+
+      <!-- SUMMARY TABLES ROW 1 (Tibi, Mantoux, Influenza, Hep B) -->
+      <div class="summary-grid" id="sumGrid1"></div>
+
+      <!-- SUMMARY TABLES ROW 2 (BMI, Smoking, DASS-21, Co-Morbid) -->
+      <div class="summary-grid" id="sumGrid2"></div>
+
+      <!-- SUMMARY TABLES ROW 3: ANTROPOMETRI & MAKMAL -->
+      <div class="summary-grid" id="sumGridAntropLab"></div>
+
+      <!-- CHARTS -->
+      <div class="charts-grid">
+        <div class="chart-box">
+          <h3>Pecahan Kategori BMI Mengikut Kumpulan Umur</h3>
+          <canvas id="chartBmiAge" height="190"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3>Status Titer Hepatitis B Staf</h3>
+          <canvas id="chartHepB" height="190"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3>Pecahan Kumpulan Umur (&lt;40 vs &ge;40 Tahun)</h3>
+          <canvas id="chartAgeGroup" height="190"></canvas>
+        </div>
+      </div>
+
+      <!-- JAWATAN ANALYSIS TABLE -->
+      <div class="card">
+        <div class="card-header dark">
+          <span>ANALISIS KESIHATAN, ANTROPOMETRI &amp; PEMATUHAN MENGIKUT KATEGORI JAWATAN</span>
+        </div>
+        <div class="table-wrap" style="box-shadow:none; border-radius:0;">
+          <table class="data-table" id="jawatanTable"></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: REKOD STAF (USER EDIT) ==================== -->
+    <section id="tab-rekod" class="tab-panel">
+      <div class="toolbar">
+        <div class="filters">
+          <input type="text" id="searchInput" placeholder="Cari nama atau No. Staf..." oninput="renderRecordsTable()" />
+          <select id="filterJawatan" onchange="renderRecordsTable()">
+            <option value="">Semua Jawatan</option>
+          </select>
+          <select id="filterUnit" onchange="renderRecordsTable()">
+            <option value="">Semua Unit</option>
+          </select>
+          <select id="filterBmi" onchange="renderRecordsTable()">
+            <option value="">Semua Kategori BMI</option>
+            <option value="Kurang Berat">Kurang Berat</option>
+            <option value="Normal">Normal</option>
+            <option value="Berlebihan Berat">Berlebihan Berat</option>
+            <option value="Obesiti">Obesiti</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn-teal" onclick="openEditModal(-1)">+ Tambah / Kemas Kini Staf</button>
+          <button class="btn-outline" onclick="resetLocalData()">Reset ke Data Asal</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table" id="rekodTable"></table>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: SENARAI WAJIB >= 40 TAHUN ==================== -->
+    <section id="tab-wajib40" class="tab-panel">
+      <div class="notice-banner">
+        <strong>Senarai Wajib Saringan Makmal &amp; Antropometri (&ge; 40 Tahun):</strong> Dipaparkan secara automatik daripada data <strong>Rekod Staf</strong> bagi staf berumur 40 tahun ke atas.
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="wajib40Table"></table>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== MODAL: EDIT / ADD STAFF RECORD ==================== -->
+  <div id="editModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="editModalTitle">Kemas Kini Rekod Kesihatan Staf</h3>
+        <button class="btn-sm btn-light" onclick="closeEditModal()">Tutup</button>
+      </div>
+      <div class="modal-body">
+        <form id="staffForm" class="form-grid" onsubmit="saveStaffRecord(event)">
+          <div class="section-divider">Maklumat Asas Staf</div>
+          <div class="form-group">
+            <label>No. Staf (A)</label>
+            <input type="text" id="f_A" required />
+          </div>
+          <div class="form-group">
+            <label>Nama Penuh Staf (B)</label>
+            <input type="text" id="f_B" required />
+          </div>
+          <div class="form-group">
+            <label>Jawatan (C)</label>
+            <select id="f_C"></select>
+          </div>
+          <div class="form-group">
+            <label>Unit / Seksyen (D)</label>
+            <select id="f_D"></select>
+          </div>
+          <div class="form-group">
+            <label>Umur (Tahun) (E)</label>
+            <input type="number" id="f_E" min="18" max="75" oninput="previewCalc()" />
+          </div>
+
+          <div class="section-divider">Saringan Tibi, CXR &amp; Mantoux</div>
+          <div class="form-group">
+            <label>Status Saringan Tibi (F)</label>
+            <select id="f_F"></select>
+          </div>
+          <div class="form-group">
+            <label>Tarikh Saringan Tibi (G)</label>
+            <input type="date" id="f_G" />
+          </div>
+          <div class="form-group">
+            <label>Keputusan Saringan Tibi (I)</label>
+            <select id="f_I"></select>
+          </div>
+          <div class="form-group">
+            <label>Last CXR (Tahun) (J)</label>
+            <input type="number" id="f_J" min="2000" max="2035" placeholder="cth: 2025" />
+          </div>
+          <div class="form-group">
+            <label>Status Ujian Mantoux (K)</label>
+            <select id="f_K"></select>
+          </div>
+          <div class="form-group">
+            <label>Bacaan Mantoux (mm) (L)</label>
+            <input type="number" step="0.1" id="f_L" />
+          </div>
+
+          <div class="section-divider">Imunisasi Influenza &amp; Hepatitis B</div>
+          <div class="form-group">
+            <label>Status Suntikan Influenza (M)</label>
+            <select id="f_M"></select>
+          </div>
+          <div class="form-group">
+            <label>Tarikh Suntikan Flu (N)</label>
+            <input type="date" id="f_N" />
+          </div>
+          <div class="form-group">
+            <label>Status Imunisasi Hep B (P)</label>
+            <select id="f_P"></select>
+          </div>
+          <div class="form-group">
+            <label>Tarikh Dos Terakhir (Q)</label>
+            <input type="date" id="f_Q" />
+          </div>
+          <div class="form-group">
+            <label>Paras Titer Anti-HBs (mIU/mL) (S)</label>
+            <input type="text" id="f_S" placeholder="cth: 225.45 atau >1000" oninput="previewCalc()" />
+          </div>
+          <div class="form-group">
+            <label>Status Titer Anti-HBs (Auto) (R)</label>
+            <input type="text" id="f_R_preview" readonly style="background:#f1f5f9;" />
+          </div>
+
+          <div class="section-divider">Antropometri, Gaya Hidup &amp; Minda Sihat</div>
+          <div class="form-group">
+            <label>Tinggi (CM) (T)</label>
+            <input type="number" step="0.1" id="f_T" oninput="previewCalc()" />
+          </div>
+          <div class="form-group">
+            <label>Berat (KG) (U)</label>
+            <input type="number" step="0.1" id="f_U" oninput="previewCalc()" />
+          </div>
+          <div class="form-group">
+            <label>BMI &amp; Kategori (Auto) (V / W)</label>
+            <input type="text" id="f_BMI_preview" readonly style="background:#f1f5f9; font-weight:700;" />
+          </div>
+          <div class="form-group">
+            <label>Co-Morbid (Y)</label>
+            <select id="f_Y"></select>
+          </div>
+          <div class="form-group">
+            <label>Tekanan Darah / BP (Z)</label>
+            <input type="text" id="f_Z" placeholder="cth: 120/80" />
+          </div>
+          <div class="form-group">
+            <label>Status Merokok (AA)</label>
+            <select id="f_AA"></select>
+          </div>
+          <div class="form-group">
+            <label>DASS-21 (AB)</label>
+            <select id="f_AB"></select>
+          </div>
+
+          <div class="section-divider">Keputusan Makmal (Wajib &ge; 40 Tahun)</div>
+          <div class="form-group">
+            <label>Tarikh Ix (AC)</label>
+            <input type="date" id="f_AC" />
+          </div>
+          <div class="form-group">
+            <label>WBC (AD)</label>
+            <input type="number" step="0.01" id="f_AD" />
+          </div>
+          <div class="form-group">
+            <label>Hb (g/dL) (AE)</label>
+            <input type="number" step="0.1" id="f_AE" />
+          </div>
+          <div class="form-group">
+            <label>Platelet (AF)</label>
+            <input type="number" step="1" id="f_AF" />
+          </div>
+          <div class="form-group">
+            <label>Jenis Glukos (AG)</label>
+            <select id="f_AG"></select>
+          </div>
+          <div class="form-group">
+            <label>FBS / RBS (AH)</label>
+            <input type="number" step="0.1" id="f_AH" />
+          </div>
+          <div class="form-group">
+            <label>Total Cholesterol (AI)</label>
+            <input type="number" step="0.01" id="f_AI" />
+          </div>
+          <div class="form-group">
+            <label>LDL (AJ)</label>
+            <input type="number" step="0.01" id="f_AJ" />
+          </div>
+          <div class="form-group">
+            <label>HDL (AK)</label>
+            <input type="number" step="0.01" id="f_AK" />
+          </div>
+          <div class="form-group">
+            <label>Triglycerides (AL)</label>
+            <input type="number" step="0.01" id="f_AL" />
+          </div>
+          <div class="form-group">
+            <label>Urea (AM)</label>
+            <input type="number" step="0.1" id="f_AM" />
+          </div>
+          <div class="form-group">
+            <label>Creatinine (AN)</label>
+            <input type="number" step="0.1" id="f_AN" />
+          </div>
+          <div class="form-group">
+            <label>ALT (AV)</label>
+            <input type="number" step="0.1" id="f_AV" />
+          </div>
+          <div class="form-group">
+            <label>AST (AW)</label>
+            <input type="number" step="0.1" id="f_AW" />
+          </div>
+          <div class="form-group">
+            <label>HbA1c (jika DM) (AY)</label>
+            <input type="number" step="0.1" id="f_AY" />
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-outline" onclick="closeEditModal()">Batal</button>
+        <button type="submit" form="staffForm" class="btn-teal">Simpan Perubahan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: OWNER AUTHENTICATION ==================== -->
+  <div id="ownerModal" class="modal-backdrop">
+    <div class="modal small">
+      <div class="modal-header">
+        <h3>Akses Owner (Muat Turun Laporan)</h3>
+        <button class="btn-sm btn-light" onclick="closeOwnerModal()">Tutup</button>
+      </div>
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
+        <p style="font-size:0.84rem; color:var(--muted);">
+          Masukkan kod laluan Owner untuk membuka kebenaran muat turun laporan CSV/JSON. (Kod laluan lalai: <strong>KKKUPANG2026</strong> — anda boleh mengubahnya dalam kod HTML sebelum memuat naik ke GitHub).
+        </p>
+        <div class="form-group">
+          <label>Kod Laluan Owner</label>
+          <input type="password" id="ownerPassInput" placeholder="Masukkan kod laluan..." onkeydown="if(event.key==='Enter') verifyOwnerPass()" />
+        </div>
+        <div id="ownerErrMsg" style="color:#b91c1c; font-size:0.8rem; display:none;">Kod laluan tidak sah!</div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnLogoutOwner" type="button" class="btn-danger" onclick="logoutOwner()" style="margin-right:auto; display:none;">Log Keluar Owner</button>
+        <button type="button" class="btn-outline" onclick="closeOwnerModal()">Batal</button>
+        <button type="button" class="btn-amber" onclick="verifyOwnerPass()">Sahkan Owner</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // KONFIGURASI OWNER & DATA ASAL (DIPRAISI DARI REKOD_STAF)
+    // =========================================================================
+    const OWNER_PASSCODE = "KKKUPANG2026";
+    const STORAGE_KEY = "KK_KUPANG_REKOD_KESIHATAN_V1";
+    const INITIAL_DATA = [{"A": "STF-001", "B": "NORAZALINA BT SAMSUDIN", "C": "Pakar Perubatan Keluarga", "D": "OPD / Pesakit Luar", "E": 52, "F": "", "G": "", "H": "", "I": "", "J": 2024, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-07-10", "O": "", "P": "", "Q": "", "R": "", "S": 225.45, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-002", "B": "YUGENDRI A/P PERMAL", "C": "Pegawai Perubatan", "D": "OPD / Pesakit Luar", "E": 37, "F": "", "G": "", "H": "", "I": "", "J": 2007, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-08-10", "O": "", "P": "", "Q": "", "R": "", "S": 430.69, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-003", "B": "NURUL AMIRA BINTI ABD HASAN", "C": "Pegawai Perubatan", "D": "OPD / Pesakit Luar", "E": 35, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-11-06", "O": "", "P": "", "Q": "", "R": "", "S": 65.7, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-004", "B": "HANIF BIN KHAIRUDIN", "C": "Pegawai Perubatan", "D": "OPD / Pesakit Luar", "E": 33, "F": "", "G": "", "H": "", "I": "", "J": 2026, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-12-10", "O": "", "P": "", "Q": "", "R": "", "S": 28.31, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-005", "B": "LOW HOCK WAY", "C": "Pegawai Perubatan", "D": "OPD / Pesakit Luar", "E": 32, "F": "", "G": "", "H": "", "I": "", "J": 2018, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "16/6/2026", "O": "", "P": "", "Q": "", "R": "", "S": 843.78, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-006", "B": "MUHAMAD NASRULHAKIM BIN ABDULLAH", "C": "Pegawai Perubatan", "D": "OPD / Pesakit Luar", "E": 37, "F": "", "G": "", "H": "", "I": "", "J": 2024, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-05-05", "O": "", "P": "", "Q": "", "R": "", "S": 231.64, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-007", "B": "KHIRUPHAALANI SUBRAMANIAM", "C": "Pegawai Perubatan", "D": "OPD / Pesakit Luar", "E": 34, "F": "", "G": "", "H": "", "I": "", "J": "", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": "164.22\n", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-008", "B": "NUR AFIQAH BINTI AZMI", "C": "Pegawai Perubatan", "D": "OPD / Pesakit Luar", "E": 35, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "14/5/2026", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-009", "B": "SITI HAJAR BINTI RAMLI", "C": "Pegawai Perubatan", "D": "OPD / Pesakit Luar", "E": 38, "F": "", "G": "", "H": "", "I": "", "J": 2024, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "14/5/2026", "O": "", "P": "", "Q": "", "R": "", "S": ">1000", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-010", "B": "JANICE PHILIP", "C": "Pegawai Perubatan", "D": "OPD / Pesakit Luar", "E": 28, "F": "", "G": "", "H": "", "I": "", "J": 2024, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-08-10", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-011", "B": "SYAMIMI BINTI MOHAMAD MUHIDDIN", "C": "Pegawai Perubatan", "D": "OPD / Pesakit Luar", "E": 28, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-08-10", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-012", "B": "NURUL FAREHA BINTI ZULKIFLI", "C": "Pegawai Perubatan", "D": "OPD / Pesakit Luar", "E": 29, "F": "", "G": "", "H": "", "I": "", "J": "", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-08-10", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-013", "B": "IFFA ROWIENA BINTI MOHD ILHAMI", "C": "Pegawai Farmasi", "D": "Farmasi", "E": 33, "F": "", "G": "", "H": "", "I": "", "J": 2018, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "17/7/2026", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-014", "B": "KHAIRINA BINTI SUBRE", "C": "Pegawai Farmasi", "D": "Farmasi", "E": 32, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": 86, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-015", "B": "LIM YI WEI", "C": "Pegawai Farmasi", "D": "Farmasi", "E": 30, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2027-12-07", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-016", "B": "MUHAMMAD FAKHRI NAIM B ISHAK", "C": "Pegawai Farmasi", "D": "Farmasi", "E": 39, "F": "", "G": "", "H": "", "I": "", "J": 2020, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-017", "B": "NUR AIN SHAFINAZ BINTI ZULKIFLI", "C": "Penolong Pegawai Farmasi", "D": "Farmasi", "E": 30, "F": "", "G": "", "H": "", "I": "", "J": 2020, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": 84.32, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-018", "B": "TAN MAN QI", "C": "Pegawai Farmasi", "D": "Farmasi", "E": 27, "F": "", "G": "", "H": "", "I": "", "J": 2024, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-019", "B": "AINUN BINTI AHMAD HAZEMI", "C": "Pembantu Khidmat Am", "D": "OPD / Pesakit Luar", "E": 52, "F": "", "G": "", "H": "", "I": "", "J": 2022, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": 514, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-020", "B": "NUREEN FARZANA BINTI MOHD NIZAR", "C": "Pegawai Farmasi", "D": "Farmasi", "E": 26, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-12-07", "O": "", "P": "", "Q": "", "R": "", "S": 780.39, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-021", "B": "NOR ISMIZAH BINTI ISMAIL", "C": "Penolong Pegawai Farmasi", "D": "Farmasi", "E": 53, "F": "", "G": "", "H": "", "I": "", "J": "", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-022", "B": "ANIS AISYAH BINTI MOHD DZAHARI", "C": "Pegawai Farmasi", "D": "Farmasi", "E": 25, "F": "", "G": "", "H": "", "I": "", "J": 2020, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-023", "B": "LEONG WENXIAN", "C": "Pegawai Farmasi", "D": "Farmasi", "E": 32, "F": "", "G": "", "H": "", "I": "", "J": 2017, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": 201, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-024", "B": "NOOR FAZILAH BINTI AHMAD ZAINON", "C": "Pembantu Khidmat Am", "D": "OPD / Pesakit Luar", "E": 43, "F": "", "G": "", "H": "", "I": "", "J": 2022, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": 16.3, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-025", "B": "AZLAN BIN BAHAROM", "C": "Penolong Pegawai Perubatan", "D": "OPD / Pesakit Luar", "E": 48, "F": "", "G": "", "H": "", "I": "", "J": 2022, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-12-05", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-026", "B": "AZLINA BINTI MAT DESA", "C": "Pembantu Perawatan Kesihatan", "D": "OPD / Pesakit Luar", "E": 45, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-12-05", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-027", "B": "HARIDAH BINTI YAAKOB", "C": "Jururawat Kesihatan", "D": "Klinik Ibu & Anak (MCH)", "E": 54, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-07-06", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-028", "B": "NIK MUHAMAD ZULHAKIM BIN NIK AZMI", "C": "Penolong Pegawai Perubatan", "D": "OPD / Pesakit Luar", "E": 31, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "14/5/2026", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-029", "B": "MOHAMAD HAIRRIL BIN AZIZAN", "C": "Penolong Pegawai Perubatan", "D": "OPD / Pesakit Luar", "E": 32, "F": "", "G": "", "H": "", "I": "", "J": 2015, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "13/5/2026", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-030", "B": "MOHAMAD NUR IMAN BIN SHAMSUDIN", "C": "Penolong Pegawai Perubatan", "D": "OPD / Pesakit Luar", "E": 31, "F": "", "G": "", "H": "", "I": "", "J": 2022, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-12-05", "O": "", "P": "", "Q": "", "R": "", "S": 698.67, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-031", "B": "MUHAMMAD FAIZAL BIN AHMAD SANI", "C": "Pembantu Khidmat Am", "D": "OPD / Pesakit Luar", "E": 39, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": 42.68, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-032", "B": "MOHD SHAHIR BIN SHAFIE", "C": "Penolong Pegawai Perubatan", "D": "OPD / Pesakit Luar", "E": 38, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "14/5/2026 ", "O": "", "P": "", "Q": "", "R": "", "S": ">1000", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-033", "B": "SITI CRISHAH BINTI ABDUL RAHMAN", "C": "Jururawat Kesihatan", "D": "Klinik Ibu & Anak (MCH)", "E": 47, "F": "", "G": "", "H": "", "I": "", "J": 2022, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "14/5/2026 ", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-034", "B": "NOOR SHAHIDA BINTI EMBONG", "C": "Jururawat Kesihatan", "D": "Klinik Ibu & Anak (MCH)", "E": 35, "F": "", "G": "", "H": "", "I": "", "J": 2025, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-12-05", "O": "", "P": "", "Q": "", "R": "", "S": ">1000", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-035", "B": "WAN JASMI BIN ISMAIL", "C": "Penolong Pegawai Perubatan Kanan", "D": "OPD / Pesakit Luar", "E": 45, "F": "", "G": "", "H": "", "I": "", "J": 2026, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "13/5/2025", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-036", "B": "CHE WAN SAFRYNA BINTI MEYU ZAINUN", "C": "Pembantu Perawatan Kesihatan", "D": "OPD / Pesakit Luar", "E": 41, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-07-06", "O": "", "P": "", "Q": "", "R": "", "S": "13.52\n", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-037", "B": "ZAID AZWANDI BIN ABDUL RASHID", "C": "Pembantu Perawatan Kesihatan", "D": "OPD / Pesakit Luar", "E": 49, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-12-05", "O": "", "P": "", "Q": "", "R": "", "S": "67.44\n", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Perokok Aktif", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-038", "B": "HASNAH BINTI ABDULLAH", "C": "Pembantu Khidmat Am", "D": "OPD / Pesakit Luar", "E": 52, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "14/5/2026 ", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-039", "B": "MOHD ZUKRI BIN ISMAIL", "C": "Pembantu Khidmat Am", "D": "OPD / Pesakit Luar", "E": 58, "F": "", "G": "", "H": "", "I": "", "J": 2016, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-08-06", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Perokok Aktif", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-040", "B": "MAIZATUL IZWANI BINTI ZAKARIA", "C": "Jururawat Masyarakat", "D": "Klinik Ibu & Anak (MCH)", "E": 38, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": 19.1, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-041", "B": "SAMSIAH BINTI JAMALUDIN", "C": "Jururawat Masyarakat", "D": "Klinik Ibu & Anak (MCH)", "E": 46, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": ">1000", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-042", "B": "ZALEHA BINTI BAHAROM", "C": "Jururawat Masyarakat", "D": "Klinik Ibu & Anak (MCH)", "E": 50, "F": "", "G": "", "H": "", "I": "", "J": -2025, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-07-05", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-043", "B": "NORADILAH BINTI SUHAIMI", "C": "Jururawat Masyarakat", "D": "Klinik Ibu & Anak (MCH)", "E": 36, "F": "", "G": "", "H": "", "I": "", "J": 2019, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-07-05", "O": "", "P": "", "Q": "", "R": "", "S": 387.81, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-044", "B": "YASNI BINTI MAT YUSOF", "C": "Jururawat Masyarakat", "D": "Klinik Ibu & Anak (MCH)", "E": 45, "F": "", "G": "", "H": "", "I": "", "J": 2025, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "15/6/2026", "O": "", "P": "", "Q": "", "R": "", "S": 84.44, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-045", "B": "SITI SALMAH BINTI SAMSUDIN", "C": "Jururawat Masyarakat", "D": "Klinik Ibu & Anak (MCH)", "E": 50, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-09-06", "O": "", "P": "", "Q": "", "R": "", "S": "38.41\n", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-046", "B": "NORLIZAN BINTI AB RAHMAN", "C": "Jururawat Masyarakat", "D": "Klinik Ibu & Anak (MCH)", "E": 53, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-10-06", "O": "", "P": "", "Q": "", "R": "", "S": 961.69, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-047", "B": "SHAHRIZAD BT ZAKARIA", "C": "Jururawat Masyarakat", "D": "Klinik Ibu & Anak (MCH)", "E": 47, "F": "", "G": "", "H": "", "I": "", "J": -2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-10-06", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-048", "B": "ZAIDAH BINTI RAMLI", "C": "Jururawat Kesihatan", "D": "Klinik Ibu & Anak (MCH)", "E": 53, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-12-05", "O": "", "P": "", "Q": "", "R": "", "S": 153.94, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-049", "B": "RODZIAH BINTI HISAMUDIN", "C": "Jururawat Masyarakat", "D": "Klinik Ibu & Anak (MCH)", "E": 48, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-10-06", "O": "", "P": "", "Q": "", "R": "", "S": ">1000", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-050", "B": "JAMALIAH BINTI MOHAMAD YUSOP", "C": "Jururawat Masyarakat", "D": "Klinik Ibu & Anak (MCH)", "E": 52, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "15/6/2026", "O": "", "P": "", "Q": "", "R": "", "S": 433.53, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-051", "B": "FAUDLIZA BINTI OMAR", "C": "Jururawat Masyarakat", "D": "Klinik Ibu & Anak (MCH)", "E": 54, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-07-05", "O": "", "P": "", "Q": "", "R": "", "S": "10.37\n", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-052", "B": "KHORIAH BINTI MOHAMAD DESA", "C": "Jururawat Kesihatan", "D": "Klinik Ibu & Anak (MCH)", "E": 39, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": "> 1000", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-053", "B": "NORFADHLINA BINTI ABDUL RAHMAN", "C": "Jururawat Kesihatan", "D": "Klinik Ibu & Anak (MCH)", "E": 38, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "15/6/2026", "O": "", "P": "", "Q": "", "R": "", "S": "2023 : 132.67", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-054", "B": "NORSHAKILLA BINTI MAZMIN", "C": "Jururawat Kesihatan", "D": "Klinik Ibu & Anak (MCH)", "E": 37, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "15/6/2026", "O": "", "P": "", "Q": "", "R": "", "S": 2023, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-055", "B": "NURUL SUHAILA BINTI ISHAK", "C": "Jururawat Masyarakat", "D": "Klinik Ibu & Anak (MCH)", "E": 39, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "15/6/2026", "O": "", "P": "", "Q": "", "R": "", "S": "2023 : 462.63", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-056", "B": "SYAHIDA BINTI SUDIN", "C": "Jururawat Kesihatan", "D": "Klinik Ibu & Anak (MCH)", "E": 44, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "21/5/2026", "O": "", "P": "", "Q": "", "R": "", "S": "2023 : 125.00", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-057", "B": "ZAINA BINTI MD ALI", "C": "Jururawat Masyarakat", "D": "Klinik Ibu & Anak (MCH)", "E": 49, "F": "", "G": "", "H": "", "I": "", "J": 2021, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "15/6/2026", "O": "", "P": "", "Q": "", "R": "", "S": "2023 : > 1000", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-058", "B": "MASRIYAH BT MOHAMED DAUD", "C": "Pembantu Perawatan Kesihatan", "D": "OPD / Pesakit Luar", "E": 50, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": "2023: 67.25", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-059", "B": "NOR HASHILA BINTI NORDIN", "C": "Jururawat Masyarakat", "D": "Klinik Ibu & Anak (MCH)", "E": 36, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "15/6/2026", "O": "", "P": "", "Q": "", "R": "", "S": "2023: 42.13", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-060", "B": "NORIZA BINTI ABD RAHMAN", "C": "Jururawat Kesihatan", "D": "Klinik Ibu & Anak (MCH)", "E": 46, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "15/6/2026", "O": "", "P": "", "Q": "", "R": "", "S": "2023: 36.28\n", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-061", "B": "ROHAIZAN BINTI HUSIN", "C": "Jururawat Kesihatan", "D": "Klinik Ibu & Anak (MCH)", "E": 45, "F": "", "G": "", "H": "", "I": "", "J": 2026, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "14/5/2026", "O": "", "P": "", "Q": "", "R": "", "S": "2023 : > 1000", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-062", "B": "NORUL HARIZA BINTI MOHAMED NOR", "C": "Jururawat Kesihatan", "D": "Klinik Ibu & Anak (MCH)", "E": 47, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "21/5/2026", "O": "", "P": "", "Q": "", "R": "", "S": "2023 : >1000", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-063", "B": "WAN NOOR ROHAIZAN BINTI MOHAMED SALLEH", "C": "Jururawat Kesihatan", "D": "Klinik Ibu & Anak (MCH)", "E": 36, "F": "", "G": "", "H": "", "I": "", "J": 2024, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-064", "B": "ZUHAIDA BINTI WAHAB", "C": "Jururawat Masyarakat", "D": "Klinik Ibu & Anak (MCH)", "E": 43, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "14/5/2026", "O": "", "P": "", "Q": "", "R": "", "S": 2024, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-065", "B": "CHE MAZILA BINTI CHE IBRAHIM", "C": "Jururawat Masyarakat", "D": "Klinik Ibu & Anak (MCH)", "E": 46, "F": "", "G": "", "H": "", "I": "", "J": 2026, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-066", "B": "ROZIMAH BINTI GHANI", "C": "Ketua Jururawat Kesihatan", "D": "Klinik Ibu & Anak (MCH)", "E": 49, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": "2023 : 405.35", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-067", "B": "RAHILA NAJIHAH BINTI ALI", "C": "Fisioterapi", "D": "Fisioterapi", "E": 33, "F": "", "G": "", "H": "", "I": "", "J": 2024, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "16/6/2026", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-068", "B": "AHMAD TAJUDDIN BIN NOORDIN", "C": "Juruteknologi Makmal Perubatan", "D": "Makmal Perubatan", "E": 30, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-08-06", "O": "", "P": "", "Q": "", "R": "", "S": 2023, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-069", "B": "NORHAIDA BINTI JAMIL", "C": "Juruteknologi Makmal Perubatan", "D": "Makmal Perubatan", "E": 44, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-04-06", "O": "", "P": "", "Q": "", "R": "", "S": "2023 : > 1000", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-070", "B": "NURUL FATIHAH BINTI MOHD NASIR", "C": "Juruteknologi Makmal Perubatan", "D": "Makmal Perubatan", "E": 38, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "21/5/2026", "O": "", "P": "", "Q": "", "R": "", "S": "2023 : 637", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-071", "B": "UMMI KALSOM BT MAD ISA", "C": "Juruteknologi Makmal Perubatan", "D": "Makmal Perubatan", "E": 45, "F": "", "G": "", "H": "", "I": "", "J": 2024, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "15/6/2026", "O": "", "P": "", "Q": "", "R": "", "S": "2025 : 369.29", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-072", "B": "ZUBAIDAH BT HAMZAH", "C": "Juruteknologi Makmal Perubatan", "D": "Makmal Perubatan", "E": 38, "F": "", "G": "", "H": "", "I": "", "J": 2023, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-08-06", "O": "", "P": "", "Q": "", "R": "", "S": "2024:95.46", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-073", "B": "NUROL BINTI MOHD NOOR", "C": "Juruteknologi Makmal Perubatan", "D": "Makmal Perubatan", "E": 39, "F": "", "G": "", "H": "", "I": "", "J": 2024, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "17/5/2026", "O": "", "P": "", "Q": "", "R": "", "S": ">100", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-074", "B": "NUR ATHIRAH BINTI AZIZAN", "C": "Jururawat Kesihatan", "D": "Klinik Ibu & Anak (MCH)", "E": 34, "F": "", "G": "", "H": "", "I": "", "J": 2011, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-12-05", "O": "", "P": "", "Q": "", "R": "", "S": "2022:37.43", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-075", "B": "NURUL HUSNA BINTI ZAKARIA", "C": "Jururawat Kesihatan", "D": "Klinik Ibu & Anak (MCH)", "E": 38, "F": "", "G": "", "H": "", "I": "", "J": 2025, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-12-05", "O": "", "P": "", "Q": "", "R": "", "S": "2023: 13.31", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-076", "B": "NURUL SYAHIRAH BINTI ABD RAHMAN", "C": "Pegawai Farmasi", "D": "Farmasi", "E": 45, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "15/6/2026", "O": "", "P": "", "Q": "", "R": "", "S": "-", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-077", "B": "IRFAN BIN MOHAMMAD", "C": "Pegawai Farmasi", "D": "Farmasi", "E": 26, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "18/6/2026", "O": "", "P": "", "Q": "", "R": "", "S": "-", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-078", "B": "NASARUDDIN BIN AHMAD", "C": "Pembantu Tadbir", "D": "OPD / Pesakit Luar", "E": 46, "F": "", "G": "", "H": "", "I": "", "J": "-", "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "20/6/2026 (KKIA) ", "O": "", "P": "", "Q": "", "R": "", "S": 2024, "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}, {"A": "STF-079", "B": "MOHD RAZMAN BIN MOHD DAUD", "C": "Penolong Pegawai Farmasi", "D": "Farmasi", "E": 46, "F": "", "G": "", "H": "", "I": "", "J": 2024, "K": "Negatif (<10mm)", "L": "", "M": "Lengkap (Tahun Semasa)", "N": "2026-08-10", "O": "", "P": "", "Q": "", "R": "", "S": "", "T": "", "U": "", "V": "", "W": "", "X": "", "Y": "", "Z": "", "AA": "Tidak Merokok", "AB": "", "AC": "", "AD": "", "AE": "", "AF": "", "AG": "", "AH": "", "AI": "", "AJ": "", "AK": "", "AL": "", "AM": "", "AN": "", "AO": "", "AP": "", "AQ": "", "AR": "", "AS": "", "AT": "", "AU": "", "AV": "", "AW": "", "AX": "", "AY": "", "AZ": ""}];
+    const REF_OPTIONS = {"A": ["OPD / Pesakit Luar", "Fisioterapi", "Klinik Ibu & Anak (MCH)", "Farmasi", "Makmal Perubatan", "Farmasi Logistik"], "B": ["Pegawai Perubatan", "Penolong Pegawai Perubatan", "Jururawat Kesihatan", "Jururawat Masyarakat", "Pegawai Farmasi", "Juruteknologi Makmal Perubatan", "Pembantu Perawatan Kesihatan", "Pembantu Tadbir", "Pakar Perubatan Keluarga", "Penolong Pegawai Farmasi", "Fisioterapi", "Pembantu Khidmat Am", "Ketua Jururawat Kesihatan", "Penolong Pegawai Perubatan Kanan"], "C": ["Selesai", "Belum Saringan", "Dalam Rawatan / Susulan", "Tamat Tempoh (>1 Tahun)"], "D": ["Negatif / Normal", "Positif / Rujuk Pakar", "Menunggu Keputusan", "Tidak Berkenaan"], "E": ["Negatif (<10mm)", "Positif (>=10mm)", "Belum Dilakukan", "Tidak Berkenaan"], "F": ["Lengkap (Tahun Semasa)", "Tamat Tempoh", "Belum Terima", "Pengecualian Medikal"], "G": ["Lengkap (3 Dos)", "Sedang Melengkapkan (Dos 1/2)", "Dos Penggalak (Booster)", "Belum Mula", "Imun Semula Jadi"], "H": ["Imun (>=10 mIU/mL)", "Tidak Imun (<10 mIU/mL)", "Belum Ujian Titer", "Tidak Berkenaan"], "I": ["Tiada (Sihat)", "Hipertensi (HPT)", "Diabetes Mellitus (DM)", "Dislipidemia (HPL)", "HPT & DM", "HPT, DM & HPL", "Asma / Respiratori", "Lain-lain"], "J": ["Tidak Merokok", "Perokok Aktif", "Bekas Perokok", "Vape / E-Rokok"], "K": ["Normal", "Ringan (Mild)", "Sederhana (Moderate)", "Teruk (Severe)", "Sangat Teruk (Extremely Severe)", "Belum Saringan"], "L": ["FBS", "RBS"]};
+
+    const JAWATAN_LIST = ["Pegawai Perubatan", "Penolong Pegawai Perubatan", "Jururawat Kesihatan", "Jururawat Masyarakat", "Pegawai Farmasi", "Juruteknologi Makmal Perubatan", "Pembantu Perawatan Kesihatan", "Pembantu Tadbir", "Pakar Perubatan Keluarga", "Penolong Pegawai Farmasi", "Fisioterapi", "Pembantu Khidmat Am", "Ketua Jururawat Kesihatan", "Penolong Pegawai Perubatan Kanan"];
+
+    let records = [];
+    let isOwner = false;
+    let editingIndex = -1;
+    let charts = {};
+
+    function loadRecords() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            records = parsed;
+            return;
+          }
+        }
+      } catch (e) {}
+      records = JSON.parse(JSON.stringify(INITIAL_DATA));
+      saveRecords();
+    }
+
+    function saveRecords() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    }
+
+    function resetLocalData() {
+      if (!confirm("Reset semua data kepada set rekod asal dalam fail? Perubahan setempat anda akan dipadam.")) return;
+      records = JSON.parse(JSON.stringify(INITIAL_DATA));
+      saveRecords();
+      refreshAll();
+    }
+
+    // =========================================================================
+    // FORMULA KIRAAN AUTOMATIK (BMI, KATEGORI BMI, TITER HEP B, PEMATUHAN)
+    // =========================================================================
+    function calcBmi(hCm, wKg) {
+      const h = parseFloat(hCm);
+      const w = parseFloat(wKg);
+      if (!h || !w || h <= 0 || w <= 0) return { bmi: "", cat: "" };
+      const bmiVal = Number((w / Math.pow(h / 100, 2)).toFixed(1));
+      let cat = "Obesiti";
+      if (bmiVal < 18.5) cat = "Kurang Berat";
+      else if (bmiVal < 23) cat = "Normal";
+      else if (bmiVal < 27.5) cat = "Berlebihan Berat";
+      return { bmi: bmiVal, cat };
+    }
+
+    function calcTiterStatus(titerRaw) {
+      const s = String(titerRaw ?? "").trim();
+      if (!s) return "";
+      const num = Number(s);
+      if (!isNaN(num)) {
+        return num >= 10 ? "Imun (>=10 mIU/mL)" : "Tidak Imun (<10 mIU/mL)";
+      }
+      if (s.startsWith(">")) return "Imun (>=10 mIU/mL)";
+      return "Belum Ujian Titer";
+    }
+
+    function getEffectiveTiter(r) {
+      if (r.R && String(r.R).trim() !== "") return String(r.R).trim();
+      return calcTiterStatus(r.S);
+    }
+
+    function getEffectiveBmi(r) {
+      if (r.V !== "" && r.V !== null && r.V !== undefined) {
+        const num = Number(r.V);
+        if (!isNaN(num)) {
+          let cat = r.W || "";
+          if (!cat) {
+            if (num < 18.5) cat = "Kurang Berat";
+            else if (num < 23) cat = "Normal";
+            else if (num < 27.5) cat = "Berlebihan Berat";
+            else cat = "Obesiti";
+          }
+          return { bmi: num, cat };
+        }
+      }
+      return calcBmi(r.T, r.U);
+    }
+
+    function calcCompliance(r) {
+      if (!r.B || String(r.B).trim() === "") return "";
+      const tbOk = r.F === "Selesai";
+      const fluOk = r.M === "Lengkap (Tahun Semasa)" || r.M === "Pengecualian Medikal";
+      const hepbDosOk = ["Lengkap (3 Dos)", "Dos Penggalak (Booster)", "Imun Semula Jadi"].includes(r.P);
+      const titerOk = getEffectiveTiter(r) === "Imun (>=10 mIU/mL)";
+      const dassOk = r.AB === "Normal" || r.AB === "";
+      const age = Number(r.E);
+      let age40Ok = true;
+      if (!isNaN(age) && age >= 40) {
+        age40Ok = Boolean(r.T && r.U && r.AG && r.AJ && r.AK);
+      }
+      return (tbOk && fluOk && hepbDosOk && titerOk && dassOk && age40Ok)
+        ? "Patuh Sepenuhnya"
+        : "Belum Lengkap / Tindakan";
+    }
+
+    // =========================================================================
+    // KAWALAN AKSES OWNER (HANYA OWNER BOLEH DOWNLOAD LAPORAN)
+    // =========================================================================
+    function openOwnerModal() {
+      document.getElementById("ownerPassInput").value = "";
+      document.getElementById("ownerErrMsg").style.display = "none";
+      document.getElementById("btnLogoutOwner").style.display = isOwner ? "inline-flex" : "none";
+      document.getElementById("ownerModal").classList.add("open");
+      setTimeout(() => document.getElementById("ownerPassInput").focus(), 50);
+    }
+
+    function closeOwnerModal() {
+      document.getElementById("ownerModal").classList.remove("open");
+    }
+
+    function verifyOwnerPass() {
+      const val = document.getElementById("ownerPassInput").value;
+      if (val === OWNER_PASSCODE) {
+        isOwner = true;
+        updateOwnerUi();
+        closeOwnerModal();
+      } else {
+        document.getElementById("ownerErrMsg").style.display = "block";
+      }
+    }
+
+    function logoutOwner() {
+      isOwner = false;
+      updateOwnerUi();
+      closeOwnerModal();
+    }
+
+    function updateOwnerUi() {
+      const badge = document.getElementById("roleBadge");
+      const btnToggle = document.getElementById("btnOwnerToggle");
+      const btnCsv = document.getElementById("btnDownloadCsv");
+      const btnJson = document.getElementById("btnDownloadJson");
+
+      if (isOwner) {
+        badge.textContent = "Mod Owner Aktif (Boleh Muat Turun)";
+        badge.classList.add("owner");
+        btnToggle.textContent = "Status: Owner";
+        btnCsv.disabled = false;
+        btnJson.disabled = false;
+        btnCsv.title = "Muat turun laporan CSV";
+        btnJson.title = "Muat turun backup JSON";
+      } else {
+        badge.textContent = "Mod Staf (Edit Data Sahaja)";
+        badge.classList.remove("owner");
+        btnToggle.textContent = "Login Owner";
+        btnCsv.disabled = true;
+        btnJson.disabled = true;
+        btnCsv.title = "Hanya Owner boleh muat turun laporan";
+        btnJson.title = "Hanya Owner boleh muat turun laporan";
+      }
+    }
+
+    function exportOwnerCsv() {
+      if (!isOwner) {
+        alert("Akses ditolak: Hanya Owner boleh memuat turun laporan.");
+        return;
+      }
+      const cols = Object.keys(INITIAL_DATA[0] || {});
+      const headerRow = cols.join(",");
+      const lines = records.map(rec => {
+        const enriched = { ...rec };
+        const bmiObj = getEffectiveBmi(rec);
+        enriched.V = bmiObj.bmi;
+        enriched.W = bmiObj.cat;
+        enriched.R = getEffectiveTiter(rec);
+        enriched.AZ = calcCompliance(rec);
+        return cols.map(c => {
+          const s = String(enriched[c] ?? "").replace(/"/g, '""');
+          return `"${s}"`;
+        }).join(",");
+      });
+      const csvContent = "﻿" + [headerRow, ...lines].join("
+");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      triggerDownload(blob, `Laporan_Kesihatan_Staf_KK_Kupang_${new Date().toISOString().slice(0,10)}.csv`);
+    }
+
+    function exportOwnerJson() {
+      if (!isOwner) {
+        alert("Akses ditolak: Hanya Owner boleh memuat turun laporan.");
+        return;
+      }
+      const blob = new Blob([JSON.stringify(records, null, 2)], { type: "application/json" });
+      triggerDownload(blob, `Rekod_Staf_KK_Kupang_${new Date().toISOString().slice(0,10)}.json`);
+    }
+
+    function triggerDownload(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // =========================================================================
+    // TAB & MODAL EDIT REKOD STAF
+    // =========================================================================
+    function switchTab(tabId, btnEl) {
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.getElementById("tab-" + tabId).classList.add("active");
+      btnEl.classList.add("active");
+      if (tabId === "dashboard") renderDashboard();
+      if (tabId === "rekod") renderRecordsTable();
+      if (tabId === "wajib40") renderWajib40Table();
+    }
+
+    function populateDropdowns() {
+      const mapSelects = [
+        ["f_C", REF_OPTIONS.B || []],
+        ["f_D", REF_OPTIONS.A || []],
+        ["f_F", REF_OPTIONS.C || []],
+        ["f_I", REF_OPTIONS.D || []],
+        ["f_K", REF_OPTIONS.E || []],
+        ["f_M", REF_OPTIONS.F || []],
+        ["f_P", REF_OPTIONS.G || []],
+        ["f_Y", REF_OPTIONS.I || []],
+        ["f_AA", REF_OPTIONS.J || []],
+        ["f_AB", REF_OPTIONS.K || []],
+        ["f_AG", REF_OPTIONS.L || []]
+      ];
+      mapSelects.forEach(([id, opts]) => {
+        const sel = document.getElementById(id);
+        sel.innerHTML = `<option value="">-- Pilih --</option>` + opts.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join("");
+      });
+
+      const fJaw = document.getElementById("filterJawatan");
+      fJaw.innerHTML = `<option value="">Semua Jawatan</option>` + JAWATAN_LIST.map(j => `<option value="${escapeHtml(j)}">${escapeHtml(j)}</option>`).join("");
+
+      const fUnit = document.getElementById("filterUnit");
+      const units = REF_OPTIONS.A || [];
+      fUnit.innerHTML = `<option value="">Semua Unit</option>` + units.map(u => `<option value="${escapeHtml(u)}">${escapeHtml(u)}</option>`).join("");
+    }
+
+    function openEditModal(idx) {
+      editingIndex = idx;
+      const fields = Object.keys(INITIAL_DATA[0] || {});
+      fields.forEach(k => {
+        const el = document.getElementById("f_" + k);
+        if (el) el.value = "";
+      });
+
+      if (idx >= 0 && records[idx]) {
+        document.getElementById("editModalTitle").textContent = "Edit Rekod: " + (records[idx].B || records[idx].A);
+        fields.forEach(k => {
+          const el = document.getElementById("f_" + k);
+          if (el) el.value = records[idx][k] ?? "";
+        });
+      } else {
+        document.getElementById("editModalTitle").textContent = "Tambah Rekod Staf Baharu";
+        const nextNum = String(records.length + 1).padStart(3, "0");
+        document.getElementById("f_A").value = "STF-" + nextNum;
+      }
+      previewCalc();
+      document.getElementById("editModal").classList.add("open");
+    }
+
+    function closeEditModal() {
+      document.getElementById("editModal").classList.remove("open");
+    }
+
+    function previewCalc() {
+      const h = document.getElementById("f_T").value;
+      const w = document.getElementById("f_U").value;
+      const bmiObj = calcBmi(h, w);
+      document.getElementById("f_BMI_preview").value = bmiObj.bmi !== "" ? `${bmiObj.bmi} (${bmiObj.cat})` : "-";
+
+      const titer = document.getElementById("f_S").value;
+      document.getElementById("f_R_preview").value = calcTiterStatus(titer) || "-";
+    }
+
+    function saveStaffRecord(e) {
+      e.preventDefault();
+      const base = editingIndex >= 0 ? { ...records[editingIndex] } : { ...INITIAL_DATA[0] };
+      Object.keys(base).forEach(k => {
+        if (editingIndex < 0) base[k] = "";
+        const el = document.getElementById("f_" + k);
+        if (el) {
+          const rawVal = el.value;
+          if (el.type === "number") {
+            base[k] = rawVal === "" ? "" : Number(rawVal);
+          } else {
+            base[k] = rawVal.trim();
+          }
+        }
+      });
+
+      const bmiObj = calcBmi(base.T, base.U);
+      base.V = bmiObj.bmi;
+      base.W = bmiObj.cat;
+      base.R = calcTiterStatus(base.S);
+      base.AZ = calcCompliance(base);
+
+      if (editingIndex >= 0) {
+        records[editingIndex] = base;
+      } else {
+        records.push(base);
+      }
+      saveRecords();
+      closeEditModal();
+      refreshAll();
+    }
+
+    function deleteStaffRecord(idx) {
+      const name = records[idx]?.B || "rekod ini";
+      if (!confirm(`Padam rekod ${name}?`)) return;
+      records.splice(idx, 1);
+      saveRecords();
+      refreshAll();
+    }
+
+    // =========================================================================
+    // RENDER DASHBOARD, SUMMARY ANTROPOMETRI, CARTA & JADUAL
+    // =========================================================================
+    const pctFmt = (n, d) => d > 0 ? ((n / d) * 100).toFixed(1) + "%" : "0.0%";
+
+    function renderDashboard() {
+      const totalStaff = records.filter(r => String(r.B || "").trim() !== "").length;
+      const tbDone = records.filter(r => r.F === "Selesai").length;
+      const fluDone = records.filter(r => r.M === "Lengkap (Tahun Semasa)").length;
+      const hepbImun = records.filter(r => getEffectiveTiter(r) === "Imun (>=10 mIU/mL)").length;
+      const fullCompliant = records.filter(r => calcCompliance(r) === "Patuh Sepenuhnya").length;
+
+      const age40List = records.filter(r => Number(r.E) >= 40);
+      const age40Count = age40List.length;
+
+      // Antropometri metrics
+      const bmiEntries = records.map(r => getEffectiveBmi(r)).filter(x => x.bmi !== "" && !isNaN(x.bmi));
+      const avgBmi = bmiEntries.length ? (bmiEntries.reduce((a, b) => a + b.bmi, 0) / bmiEntries.length).toFixed(1) : "-";
+
+      const heights = records.map(r => parseFloat(r.T)).filter(v => !isNaN(v) && v > 0);
+      const weights = records.map(r => parseFloat(r.U)).filter(v => !isNaN(v) && v > 0);
+      const bmis = bmiEntries.map(x => Number(x.bmi));
+
+      const statRange = arr => arr.length ? `${Math.min(...arr).toFixed(1)} - ${Math.max(...arr).toFixed(1)}` : "-";
+      const statAvg = arr => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1) : "0.0";
+
+      const antro40Complete = age40List.filter(r => parseFloat(r.T) > 0 && parseFloat(r.U) > 0).length;
+      const antro40Missing = Math.max(0, age40Count - antro40Complete);
+
+      const bpAllCount = records.filter(r => String(r.Z || "").trim() !== "").length;
+      const bp40Count = age40List.filter(r => String(r.Z || "").trim() !== "").length;
+      const bp40Missing = Math.max(0, age40Count - bp40Count);
+
+      const dassNormal = records.filter(r => r.AB === "Normal").length;
+
+      // KPI Row 1
+      document.getElementById("kpiRow1").innerHTML = [
+        kpiCard("SARINGAN TIBI SELESAI", pctFmt(tbDone, totalStaff), `${tbDone} daripada ${totalStaff} staf`, "#0d9488"),
+        kpiCard("SUNTIKAN INFLUENZA LENGKAP", pctFmt(fluDone, totalStaff), `${fluDone} daripada ${totalStaff} staf`, "#0284c7"),
+        kpiCard("IMUN HEPATITIS B (>=10)", pctFmt(hepbImun, totalStaff), `${hepbImun} daripada ${totalStaff} staf`, "#4f46e5"),
+        kpiCard("PATUH SEPENUHNYA", pctFmt(fullCompliant, totalStaff), `${fullCompliant} daripada ${totalStaff} staf`, "#059669")
+      ].join("");
+
+      // KPI Row 2
+      document.getElementById("kpiRow2").innerHTML = [
+        kpiCard("STAF UMUR >= 40 TAHUN", pctFmt(age40Count, totalStaff), `${age40Count} staf wajib makmal & antrop.`, "#d97706"),
+        kpiCard("ANTROPOMETRI (BMI) DIREKOD", pctFmt(bmiEntries.length, totalStaff), `${bmiEntries.length} staf (Purata BMI: ${avgBmi})`, "#0369a1"),
+        kpiCard("SARINGAN DASS-21 NORMAL", pctFmt(dassNormal, totalStaff), `${dassNormal} daripada ${totalStaff} staf`, "#7c3aed"),
+        kpiCard("JUMLAH STAF AKTIF", String(totalStaff), "Staf berdaftar dalam sistem", "#334155")
+      ].join("");
+
+      // Summary Grid 1
+      document.getElementById("sumGrid1").innerHTML = [
+        buildCountTable("1. STATUS SARINGAN TIBI (TB)", ["Selesai", "Belum Saringan", "Dalam Rawatan / Susulan", "Tamat Tempoh (>1 Tahun)"], r => r.F, totalStaff, ""),
+        buildCountTable("2. STATUS UJIAN MANTOUX", ["Negatif (<10mm)", "Positif (>=10mm)", "Belum Dilakukan", "Tidak Berkenaan"], r => r.K, totalStaff, ""),
+        buildCountTable("3. STATUS SUNTIKAN INFLUENZA", ["Lengkap (Tahun Semasa)", "Tamat Tempoh", "Belum Terima", "Pengecualian Medikal"], r => r.M, totalStaff, ""),
+        buildCountTable("4. STATUS TITER HEPATITIS B", ["Imun (>=10 mIU/mL)", "Tidak Imun (<10 mIU/mL)", "Belum Ujian Titer", "Tidak Berkenaan"], r => getEffectiveTiter(r), totalStaff, "indigo")
+      ].join("");
+
+      // Summary Grid 2
+      const comorbidCustom = [
+        ["Tiada (Sihat)", records.filter(r => r.Y === "Tiada (Sihat)").length],
+        ["Hipertensi (HPT)", records.filter(r => r.Y === "Hipertensi (HPT)").length],
+        ["Diabetes Mellitus (DM)", records.filter(r => r.Y === "Diabetes Mellitus (DM)").length],
+        ["Dislipidemia (HPL)", records.filter(r => r.Y === "Dislipidemia (HPL)").length],
+        ["Gabungan (HPT/DM/HPL)", records.filter(r => ["HPT & DM", "HPT, DM & HPL"].includes(r.Y)).length]
+      ];
+      document.getElementById("sumGrid2").innerHTML = [
+        buildCountTable("5. KATEGORI INDEKS JISIM BADAN (BMI)", ["Kurang Berat", "Normal", "Berlebihan Berat", "Obesiti"], r => getEffectiveBmi(r).cat, totalStaff, ""),
+        buildCountTable("6. STATUS MEROKOK (SMOKING)", ["Tidak Merokok", "Perokok Aktif", "Bekas Perokok", "Vape / E-Rokok"], r => r.AA, totalStaff, ""),
+        buildCountTable("7. SARINGAN MINDA SIHAT (DASS-21)", ["Normal", "Ringan (Mild)", "Sederhana (Moderate)", "Teruk (Severe)", "Sangat Teruk (Extremely Severe)"], r => r.AB, totalStaff, ""),
+        buildCustomTable("8. PECAHAN CO-MORBID STAF", ["Kategori", "Bil.", "%"], comorbidCustom, totalStaff, "rose")
+      ].join("");
+
+      // Summary Grid Antropometri & Makmal
+      const antropStatRows = [
+        ["Tinggi (cm)", statAvg(heights), statRange(heights)],
+        ["Berat Badan (kg)", statAvg(weights), statRange(weights)],
+        ["Indeks Jisim Badan (BMI)", statAvg(bmis), statRange(bmis)]
+      ];
+      const antrop40Rows = [
+        ["Lengkap (Tinggi & Berat)", antro40Complete, pctFmt(antro40Complete, age40Count)],
+        ["Belum Lengkap / Kosong", antro40Missing, pctFmt(antro40Missing, age40Count)],
+        ["JUMLAH WAJIB (>=40 THN)", age40Count, pctFmt(age40Count, age40Count)]
+      ];
+      const bpRows = [
+        ["BP Direkod (Semua Staf)", bpAllCount, pctFmt(bpAllCount, totalStaff)],
+        ["BP Direkod (Umur >= 40 Thn)", bp40Count, pctFmt(bp40Count, age40Count)],
+        ["Belum Direkod (Umur >= 40)", bp40Missing, pctFmt(bp40Missing, age40Count)]
+      ];
+      const bmiCats = ["Kurang Berat", "Normal", "Berlebihan Berat", "Obesiti"];
+      const bmiAgeRows = bmiCats.map(cat => [
+        cat,
+        records.filter(r => Number(r.E) < 40 && getEffectiveBmi(r).cat === cat).length,
+        records.filter(r => Number(r.E) >= 40 && getEffectiveBmi(r).cat === cat).length
+      ]);
+      bmiAgeRows.push([
+        "JUMLAH DIREKOD",
+        bmiAgeRows.reduce((a, b) => a + b[1], 0),
+        bmiAgeRows.reduce((a, b) => a + b[2], 0)
+      ]);
+
+      document.getElementById("sumGridAntropLab").innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          ${buildThreeColTable("9. RINGKASAN STATISTIK ANTROPOMETRI", ["Parameter", "Purata", "Min - Maks"], antropStatRows, "blue")}
+          ${buildThreeColTable("10. PEMATUHAN ANTROPOMETRI (WAJIB >=40)", ["Status Rekod", "Bil.", "%"], antrop40Rows, "blue", 2)}
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          ${buildThreeColTable("11. PECAHAN BMI MENGIKUT KUMPULAN UMUR", ["Kategori BMI", "< 40 Thn", ">= 40 Thn"], bmiAgeRows, "", 4)}
+          ${buildThreeColTable("12. REKOD TEKANAN DARAH (BP)", ["Status BP", "Bil.", "%"], bpRows, "")}
+        </div>
+        ${buildLabSummaryCard()}
+      `;
+
+      renderCharts(bmiAgeRows);
+      renderJawatanTable();
+    }
+
+    function kpiCard(label, val, sub, color) {
+      return `<div class="kpi-card" style="border-left-color:${color}">
+        <div class="label">${escapeHtml(label)}</div>
+        <div class="value">${escapeHtml(val)}</div>
+        <div class="sub">${escapeHtml(sub)}</div>
+      </div>`;
+    }
+
+    function buildCountTable(title, labels, getter, denom, headerCls) {
+      const rows = labels.map(lbl => [lbl, records.filter(r => getter(r) === lbl).length]);
+      return buildCustomTable(title, ["Kategori", "Bil.", "%"], rows, denom, headerCls);
+    }
+
+    function buildCustomTable(title, headers, rows, denom, headerCls) {
+      const sumBil = rows.reduce((acc, x) => acc + x[1], 0);
+      const bodyHtml = rows.map(([lbl, bil]) => `
+        <tr>
+          <td>${escapeHtml(lbl)}</td>
+          <td class="num">${bil}</td>
+          <td class="num">${pctFmt(bil, denom)}</td>
+        </tr>`).join("");
+      return `<div class="card">
+        <div class="card-header ${headerCls}"><span>${escapeHtml(title)}</span></div>
+        <table class="mini-table">
+          <thead><tr><th>${headers[0]}</th><th class="num">${headers[1]}</th><th class="num">${headers[2]}</th></tr></thead>
+          <tbody>
+            ${bodyHtml}
+            <tr class="total-row">
+              <td>JUMLAH DIREKOD</td>
+              <td class="num">${sumBil}</td>
+              <td class="num">${pctFmt(sumBil, denom)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>`;
+    }
+
+    function buildThreeColTable(title, headers, rows, headerCls, totalRowIdx = -1) {
+      const bodyHtml = rows.map((r, i) => `
+        <tr class="${i === totalRowIdx ? "total-row" : ""}">
+          <td>${escapeHtml(String(r[0]))}</td>
+          <td class="num">${escapeHtml(String(r[1]))}</td>
+          <td class="num">${escapeHtml(String(r[2]))}</td>
+        </tr>`).join("");
+      return `<div class="card">
+        <div class="card-header ${headerCls}"><span>${escapeHtml(title)}</span></div>
+        <table class="mini-table">
+          <thead><tr><th>${headers[0]}</th><th class="num">${headers[1]}</th><th class="num">${headers[2]}</th></tr></thead>
+          <tbody>${bodyHtml}</tbody>
+        </table>
+      </div>`;
+    }
+
+    function buildLabSummaryCard() {
+      const params = [
+        ["Hb Rendah (<11.5 g/dL)", r => parseFloat(r.AE) >= 11.5, r => parseFloat(r.AE) < 11.5],
+        ["WBC Abnormal (<4 / >11)", r => parseFloat(r.AD) >= 4 && parseFloat(r.AD) <= 11, r => parseFloat(r.AD) < 4 || parseFloat(r.AD) > 11],
+        ["Total Chol (>5.2 mmol/L)", r => parseFloat(r.AI) <= 5.2, r => parseFloat(r.AI) > 5.2],
+        ["LDL Tinggi (>3.4 mmol/L)", r => parseFloat(r.AJ) <= 3.4, r => parseFloat(r.AJ) > 3.4],
+        ["Triglycerides (>1.7)", r => parseFloat(r.AL) <= 1.7, r => parseFloat(r.AL) > 1.7],
+        ["Creatinine (>106 µmol/L)", r => parseFloat(r.AN) <= 106, r => parseFloat(r.AN) > 106],
+        ["ALT Tinggi (>40 U/L)", r => parseFloat(r.AV) <= 40, r => parseFloat(r.AV) > 40],
+        ["AST Tinggi (>40 U/L)", r => parseFloat(r.AW) <= 40, r => parseFloat(r.AW) > 40],
+        ["HbA1c DM (>6.5%)", r => parseFloat(r.AY) <= 6.5, r => parseFloat(r.AY) > 6.5]
+      ];
+      const rowsHtml = params.map(([name, isNorm, isAbn]) => {
+        const valid = records.filter(r => r.AE !== "" || r.AD !== "" || r.AI !== "" || r.AJ !== "" || r.AL !== "" || r.AN !== "" || r.AV !== "" || r.AW !== "" || r.AY !== "");
+        const nCount = valid.filter(r => {
+          if (name.startsWith("Hb Rendah")) return r.AE !== "" && isNorm(r);
+          if (name.startsWith("WBC")) return r.AD !== "" && isNorm(r);
+          if (name.startsWith("Total")) return r.AI !== "" && isNorm(r);
+          if (name.startsWith("LDL")) return r.AJ !== "" && isNorm(r);
+          if (name.startsWith("Triglycerides")) return r.AL !== "" && isNorm(r);
+          if (name.startsWith("Creatinine")) return r.AN !== "" && isNorm(r);
+          if (name.startsWith("ALT")) return r.AV !== "" && isNorm(r);
+          if (name.startsWith("AST")) return r.AW !== "" && isNorm(r);
+          if (name.startsWith("HbA1c")) return r.AY !== "" && isNorm(r);
+          return false;
+        }).length;
+        const aCount = records.filter(r => {
+          if (name.startsWith("Hb Rendah")) return r.AE !== "" && isAbn(r);
+          if (name.startsWith("WBC")) return r.AD !== "" && isAbn(r);
+          if (name.startsWith("Total")) return r.AI !== "" && isAbn(r);
+          if (name.startsWith("LDL")) return r.AJ !== "" && isAbn(r);
+          if (name.startsWith("Triglycerides")) return r.AL !== "" && isAbn(r);
+          if (name.startsWith("Creatinine")) return r.AN !== "" && isAbn(r);
+          if (name.startsWith("ALT")) return r.AV !== "" && isAbn(r);
+          if (name.startsWith("AST")) return r.AW !== "" && isAbn(r);
+          if (name.startsWith("HbA1c")) return r.AY !== "" && isAbn(r);
+          return false;
+        }).length;
+        return `<tr>
+          <td>${escapeHtml(name)}</td>
+          <td class="num">${nCount}</td>
+          <td class="num" style="color:#b91c1c; font-weight:700;">${aCount}</td>
+        </tr>`;
+      }).join("");
+
+      return `<div class="card">
+        <div class="card-header dark"><span>13. PEMANTAUAN PARAMETER MAKMAL (WAJIB &ge;40)</span></div>
+        <table class="mini-table">
+          <thead><tr><th>Parameter Makmal</th><th class="num">Normal</th><th class="num">Tinggi/Abn</th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>`;
+    }
+
+    function renderCharts(bmiAgeRows) {
+      // 1. BMI by Age
+      const bmiLabels = bmiAgeRows.slice(0, 4).map(x => x[0]);
+      const under40Vals = bmiAgeRows.slice(0, 4).map(x => x[1]);
+      const over40Vals = bmiAgeRows.slice(0, 4).map(x => x[2]);
+
+      if (charts.bmiAge) charts.bmiAge.destroy();
+      charts.bmiAge = new Chart(document.getElementById("chartBmiAge"), {
+        type: "bar",
+        data: {
+          labels: bmiLabels,
+          datasets: [
+            { label: "< 40 Tahun", data: under40Vals, backgroundColor: "#0284c7" },
+            { label: ">= 40 Tahun", data: over40Vals, backgroundColor: "#0f766e" }
+          ]
+        },
+        options: { responsive: true, plugins: { legend: { position: "bottom" } } }
+      });
+
+      // 2. Hep B Titer
+      const titerLabels = ["Imun (>=10 mIU/mL)", "Tidak Imun (<10 mIU/mL)", "Belum Ujian Titer", "Tidak Berkenaan"];
+      const titerCounts = titerLabels.map(lbl => records.filter(r => getEffectiveTiter(r) === lbl).length);
+      if (charts.hepB) charts.hepB.destroy();
+      charts.hepB = new Chart(document.getElementById("chartHepB"), {
+        type: "bar",
+        data: {
+          labels: ["Imun (>=10)", "Tidak Imun (<10)", "Belum Ujian", "Tidak Berkenaan"],
+          datasets: [{ label: "Bil. Staf", data: titerCounts, backgroundColor: ["#059669", "#e11d48", "#f59e0b", "#94a3b8"] }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+      });
+
+      // 3. Age Group
+      const u40 = records.filter(r => Number(r.E) > 0 && Number(r.E) < 40).length;
+      const o40 = records.filter(r => Number(r.E) >= 40).length;
+      if (charts.ageGroup) charts.ageGroup.destroy();
+      charts.ageGroup = new Chart(document.getElementById("chartAgeGroup"), {
+        type: "doughnut",
+        data: {
+          labels: ["< 40 Tahun", ">= 40 Tahun (Wajib Makmal)"],
+          datasets: [{ data: [u40, o40], backgroundColor: ["#38bdf8", "#0f766e"] }]
+        },
+        options: { responsive: true, plugins: { legend: { position: "bottom" } } }
+      });
+    }
+
+    function renderJawatanTable() {
+      let sumJum = 0, sumTb = 0, sumFlu = 0, sumHep = 0, sum40 = 0, sumBmiRec = 0, sumBmiNorm = 0, sumNotComp = 0;
+      const rowsHtml = JAWATAN_LIST.map(jaw => {
+        const sub = records.filter(r => r.C === jaw);
+        const jum = sub.length;
+        const tb = sub.filter(r => r.F === "Selesai").length;
+        const flu = sub.filter(r => r.M === "Lengkap (Tahun Semasa)").length;
+        const hep = sub.filter(r => getEffectiveTiter(r) === "Imun (>=10 mIU/mL)").length;
+        const a40 = sub.filter(r => Number(r.E) >= 40).length;
+        const bmiRec = sub.filter(r => getEffectiveBmi(r).cat !== "").length;
+        const bmiNorm = sub.filter(r => getEffectiveBmi(r).cat === "Normal").length;
+        const compCount = sub.filter(r => calcCompliance(r) === "Patuh Sepenuhnya").length;
+        const notComp = sub.filter(r => calcCompliance(r) === "Belum Lengkap / Tindakan").length;
+        const rate = jum > 0 ? compCount / jum : 0;
+
+        sumJum += jum; sumTb += tb; sumFlu += flu; sumHep += hep;
+        sum40 += a40; sumBmiRec += bmiRec; sumBmiNorm += bmiNorm; sumNotComp += notComp;
+
+        let badge = `<span class="badge b-gray">-</span>`;
+        if (jum > 0) {
+          if (rate === 1) badge = `<span class="badge b-green">Cemerlang</span>`;
+          else if (rate >= 0.75) badge = `<span class="badge b-yellow">Memuaskan</span>`;
+          else badge = `<span class="badge b-red">Perlu Susulan</span>`;
+        }
+
+        return `<tr>
+          <td><strong>${escapeHtml(jaw)}</strong></td>
+          <td class="num">${jum}</td>
+          <td class="num">${tb}</td>
+          <td class="num">${flu}</td>
+          <td class="num">${hep}</td>
+          <td class="num">${a40}</td>
+          <td class="num">${bmiRec}</td>
+          <td class="num">${bmiNorm}</td>
+          <td class="num">${jum > 0 ? (rate * 100).toFixed(1) + "%" : "0.0%"}</td>
+          <td class="num">${notComp}</td>
+          <td class="num">${badge}</td>
+        </tr>`;
+      }).join("");
+
+      const totCompliant = records.filter(r => calcCompliance(r) === "Patuh Sepenuhnya").length;
+      const totRate = sumJum > 0 ? totCompliant / sumJum : 0;
+
+      document.getElementById("jawatanTable").innerHTML = `
+        <thead>
+          <tr>
+            <th>Kategori Jawatan</th>
+            <th class="num">Jum. Staf</th>
+            <th class="num">Tibi Selesai</th>
+            <th class="num">Flu Lengkap</th>
+            <th class="num">Hep B Imun</th>
+            <th class="num">Umur &ge;40</th>
+            <th class="num">BMI Direkod</th>
+            <th class="num">BMI Normal</th>
+            <th class="num">Kadar Patuh</th>
+            <th class="num">Belum Lengkap</th>
+            <th class="num">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+          <tr class="total-row">
+            <td>JUMLAH KESELURUHAN STAF</td>
+            <td class="num">${sumJum}</td>
+            <td class="num">${sumTb}</td>
+            <td class="num">${sumFlu}</td>
+            <td class="num">${sumHep}</td>
+            <td class="num">${sum40}</td>
+            <td class="num">${sumBmiRec}</td>
+            <td class="num">${sumBmiNorm}</td>
+            <td class="num">${(totRate * 100).toFixed(1)}%</td>
+            <td class="num">${sumNotComp}</td>
+            <td class="num"><span class="badge ${totRate === 1 ? "b-green" : (totRate >= 0.75 ? "b-yellow" : "b-red")}">${totRate === 1 ? "Cemerlang" : (totRate >= 0.75 ? "Memuaskan" : "Perlu Susulan")}</span></td>
+          </tr>
+        </tbody>`;
+    }
+
+    function renderRecordsTable() {
+      const q = (document.getElementById("searchInput").value || "").toLowerCase().trim();
+      const jawF = document.getElementById("filterJawatan").value;
+      const unitF = document.getElementById("filterUnit").value;
+      const bmiF = document.getElementById("filterBmi").value;
+
+      const filtered = records
+        .map((r, idx) => ({ r, idx }))
+        .filter(({ r }) => {
+          const matchQ = !q || String(r.B || "").toLowerCase().includes(q) || String(r.A || "").toLowerCase().includes(q);
+          const matchJ = !jawF || r.C === jawF;
+          const matchU = !unitF || r.D === unitF;
+          const matchB = !bmiF || getEffectiveBmi(r).cat === bmiF;
+          return matchQ && matchJ && matchU && matchB;
+        });
+
+      const rowsHtml = filtered.map(({ r, idx }) => {
+        const bmiObj = getEffectiveBmi(r);
+        const titer = getEffectiveTiter(r);
+        const comp = calcCompliance(r);
+        const compBadge = comp === "Patuh Sepenuhnya"
+          ? `<span class="badge b-green">Patuh Sepenuhnya</span>`
+          : `<span class="badge b-red">${escapeHtml(comp || "Belum Lengkap / Tindakan")}</span>`;
+
+        return `<tr>
+          <td>${escapeHtml(r.A)}</td>
+          <td><strong>${escapeHtml(r.B)}</strong></td>
+          <td>${escapeHtml(r.C)}</td>
+          <td>${escapeHtml(r.D)}</td>
+          <td class="num">${escapeHtml(String(r.E))}</td>
+          <td>${escapeHtml(r.F || "-")}</td>
+          <td>${escapeHtml(r.M || "-")}</td>
+          <td>${escapeHtml(titer || "-")}</td>
+          <td class="num">${bmiObj.bmi !== "" ? bmiObj.bmi : "-"}</td>
+          <td>${escapeHtml(bmiObj.cat || "-")}</td>
+          <td>${escapeHtml(r.Z || "-")}</td>
+          <td>${escapeHtml(r.AB || "-")}</td>
+          <td>${compBadge}</td>
+          <td>
+            <button class="btn-sm btn-teal" onclick="openEditModal(${idx})">Edit</button>
+            <button class="btn-sm btn-danger" onclick="deleteStaffRecord(${idx})">Padam</button>
+          </td>
+        </tr>`;
+      }).join("");
+
+      document.getElementById("rekodTable").innerHTML = `
+        <thead>
+          <tr>
+            <th>No. Staf</th>
+            <th>Nama Penuh Staf</th>
+            <th>Jawatan</th>
+            <th>Unit</th>
+            <th class="num">Umur</th>
+            <th>Status Tibi</th>
+            <th>Influenza</th>
+            <th>Titer Hep B</th>
+            <th class="num">BMI</th>
+            <th>Kategori BMI</th>
+            <th>BP</th>
+            <th>DASS-21</th>
+            <th>Pematuhan</th>
+            <th>Tindakan</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml || `<tr><td colspan="14" style="text-align:center; padding:18px;">Tiada rekod sepadan.</td></tr>`}</tbody>`;
+    }
+
+    function renderWajib40Table() {
+      const list40 = records
+        .map((r, idx) => ({ r, idx }))
+        .filter(({ r }) => Number(r.E) >= 40)
+        .sort((a, b) => Number(b.r.E) - Number(a.r.E));
+
+      const rowsHtml = list40.map(({ r, idx }, i) => {
+        const bmiObj = getEffectiveBmi(r);
+        const titer = getEffectiveTiter(r);
+        const comp = calcCompliance(r);
+        return `<tr>
+          <td class="num">${i + 1}</td>
+          <td>${escapeHtml(r.A)}</td>
+          <td><strong>${escapeHtml(r.B)}</strong></td>
+          <td>${escapeHtml(r.C)}</td>
+          <td>${escapeHtml(r.D)}</td>
+          <td class="num"><strong>${escapeHtml(String(r.E))}</strong></td>
+          <td class="num">${r.T || "-"}</td>
+          <td class="num">${r.U || "-"}</td>
+          <td class="num"><strong>${bmiObj.bmi !== "" ? bmiObj.bmi : "-"}</strong></td>
+          <td>${escapeHtml(bmiObj.cat || "Belum Diisi")}</td>
+          <td>${escapeHtml(r.Z || "-")}</td>
+          <td>${escapeHtml(r.F || "Belum Diisi")}</td>
+          <td>${escapeHtml(r.M || "Belum Diisi")}</td>
+          <td>${escapeHtml(titer || "Belum Diisi")}</td>
+          <td><span class="badge ${comp === "Patuh Sepenuhnya" ? "b-green" : "b-red"}">${escapeHtml(comp || "Belum Lengkap / Tindakan")}</span></td>
+          <td><button class="btn-sm btn-teal" onclick="openEditModal(${idx})">Edit</button></td>
+        </tr>`;
+      }).join("");
+
+      document.getElementById("wajib40Table").innerHTML = `
+        <thead>
+          <tr>
+            <th class="num">Bil</th>
+            <th>No. Staf</th>
+            <th>Nama Penuh Staf</th>
+            <th>Jawatan</th>
+            <th>Unit</th>
+            <th class="num">Umur</th>
+            <th class="num">Tinggi (cm)</th>
+            <th class="num">Berat (kg)</th>
+            <th class="num">BMI</th>
+            <th>Kategori BMI</th>
+            <th>BP</th>
+            <th>Status Tibi</th>
+            <th>Influenza</th>
+            <th>Titer Hep B</th>
+            <th>Pematuhan</th>
+            <th>Tindakan</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>`;
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function refreshAll() {
+      renderDashboard();
+      renderRecordsTable();
+      renderWajib40Table();
+    }
+
+    // Init
+    loadRecords();
+    populateDropdowns();
+    updateOwnerUi();
+    refreshAll();
+  </script>
+</body>
+</html>
